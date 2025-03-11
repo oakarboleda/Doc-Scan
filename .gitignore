@@ -1,0 +1,4 @@
+*.xml
+credentials.json
+/.idea
+
