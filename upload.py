@@ -1,50 +1,50 @@
+import json
+import os
+
+import numpy as np
+import pandas as pd
 import streamlit as st
 from PIL import Image
-from PyPDF2 import PdfReader
-from docx import Document
-from dotenv import load_dotenv
 from easyocr import Reader
 
-# Load environment variables from .env file
-load_dotenv()
+UPLOAD_DIR = "downloads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def extract_text_from_image(image):
     reader = Reader(['en'])  # Initialize EasyOCR reader
-    result = reader.readtext(image, detail=0)
-    return " ".join(result)
-
-def extract_text_from_doc(doc_file):
-    document = Document(doc_file)
-    text = ""
-    for paragraph in document.paragraphs:
-        text += paragraph.text + "\n"
-    return text
-
-def extract_text_from_pdf(pdf_file):
-    reader = PdfReader(pdf_file)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text() + "\n"
-    return text
+    image_array = np.array(image)  # Convert PIL.Image to NumPy array
+    result = reader.readtext(image_array, detail=0)
+    return "\n".join(result)
 
 def upload():
-    upload_file = st.file_uploader("Choose a file", type=["doc", "docx", "png", "jpg", "jpeg", "pdf"])
+    upload_file = st.file_uploader("Choose a file", type=["png", "jpg", "jpeg"])
     if upload_file is not None:
-        if upload_file.name.endswith((".png", ".jpg", ".jpeg")):
-            image = Image.open(upload_file)
-            file_content = extract_text_from_image(image)
-        elif upload_file.name.endswith((".doc", ".docx")):
-            file_content = extract_text_from_doc(upload_file)
-        elif upload_file.name.endswith(".pdf"):
-            file_content = extract_text_from_pdf(upload_file)
-        else:
-            file_content = "Unsupported file type."
+        # Save the uploaded file
+        file_path = os.path.join(UPLOAD_DIR, upload_file.name)
+        with open(file_path, "wb") as f:
+            f.write(upload_file.getbuffer())
+        st.success(f"File saved: {file_path}")
 
-        st.text_area("File Content", file_content, height=300)
+        # Extract text from the uploaded image
+        image = Image.open(file_path)
+        file_content = extract_text_from_image(image)
 
-        if st.button("Parse Information"):
-            with st.spinner("Parsing information..."):
-                st.subheader("Parsed Information")
-                st.write(file_content)
+        # Save extracted text to a JSON file
+        json_file_path = os.path.splitext(file_path)[0] + ".json"
+        with open(json_file_path, "w") as json_file:
+            json.dump({"text": file_content}, json_file, indent=2)
+        st.success(f"JSON file created: {json_file_path}")
+
+        # Save file content to session state
+        st.session_state['file_content'] = file_content
+
+    # Display saved files in a table
+    files = os.listdir(UPLOAD_DIR)
+    if files:
+        st.write("Uploaded Files:")
+        file_data = [{"File Name": f, "Path": os.path.join(UPLOAD_DIR, f)} for f in files]
+        df = pd.DataFrame(file_data)
+        st.dataframe(df)
+
 
 upload()
