@@ -2,9 +2,9 @@ import os
 
 import streamlit as st
 
-UPLOAD_DIR = "downloads"
+UPLOAD_DIR = "../downloads"
 
-def list_uploaded_files():
+def files():
     st.title("Uploaded Files")
 
     # Check if the directory exists and list files
@@ -26,4 +26,4 @@ def list_uploaded_files():
     else:
         st.error(f"The directory '{UPLOAD_DIR}' does not exist.")
 
-list_uploaded_files()
+files()

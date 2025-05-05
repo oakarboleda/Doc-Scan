@@ -2,6 +2,9 @@ import streamlit as st
 
 
 def logout():
+    st.session_state.role = None
+    st.rerun()
+
     st.title("Logout")
     st.write("You have been logged out.")
     # Add your logout content here
