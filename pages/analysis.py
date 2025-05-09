@@ -1,5 +1,3 @@
-# Required packages:
-# pip install pymupdf easyocr pillow numpy
 import os
 import re
 
@@ -40,14 +38,41 @@ def analysis():
                         cleaned_text = re.sub(r'\s{2,}', ' ', cleaned_text)
                         cleaned_text = re.sub(r'\n{2,}', '\n', cleaned_text).strip()
 
-                        # Extract structured data
-                        structured_data = {}
+                        # Start structured_data with default type
+                        structured_data = {
+                            "document_type": "Unknown"
+                        }
 
-                        account_match = re.search(r'Account(?: Number)?[:\s#]*([0-9xX\-\*]{6,})', cleaned_text, re.IGNORECASE)
-                        if account_match:
-                            structured_data['account_number'] = account_match.group(1)
+                        # IONOS Invoice Detection and Extraction
+                        if "Invoice" in cleaned_text and "IONOS" in cleaned_text:
+                            structured_data["document_type"] = "IONOS Invoice"
 
-                        balance_match = re.search(r'(?:Balance\s+Due|Amount\s+Due)[:\s$]*([0-9,]+\.\d{2})', cleaned_text, re.IGNORECASE)
+                            invoice_no = re.search(r"Invoice[:\s#]*([0-9]{9,})", cleaned_text)
+                            if invoice_no:
+                                structured_data["invoice_number"] = invoice_no.group(1)
+
+                            invoice_date = re.search(r"Invoice Date[:\s]+([0-9/]+)", cleaned_text)
+                            if invoice_date:
+                                structured_data["invoice_date"] = invoice_date.group(1)
+
+                            customer_id = re.search(r"Customer ID[:\s]+([0-9]+)", cleaned_text)
+                            if customer_id:
+                                structured_data["customer_id"] = customer_id.group(1)
+
+                            contract_id = re.search(r"Contract ID[:\s]+([0-9]+)", cleaned_text)
+                            if contract_id:
+                                structured_data["contract_id"] = contract_id.group(1)
+
+                            total_due = re.search(r"Total amount due.*?\$([0-9]+\.[0-9]{2})", cleaned_text,
+                                                  re.IGNORECASE)
+                            if total_due:
+                                structured_data["total_due"] = total_due.group(1)
+
+                        match = re.search(r'Account Number[:\s]+([0-9\-xX*]+)', cleaned_text, flags=re.IGNORECASE)
+                        if match:
+                            structured_data['account_number'] = match.group(1)
+
+                        balance_match = re.search(r'(?:Balance\s+Due|Amount\s+Due)[:\s$]*([0-9,]+\.\d{2})', cleaned_text, flags=re.IGNORECASE)
                         if balance_match:
                             structured_data['balance'] = balance_match.group(1)
 
@@ -55,7 +80,7 @@ def analysis():
                         if name_match:
                             structured_data['name'] = name_match.group(1)
 
-                        address_match = re.search(r'\d{3,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s+[A-Z]{2}\s+\d{5}', cleaned_text)
+                        address_match = re.search(r'\d{3,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s+[A-Z]{2}\s+\d{5}', cleaned_text, flags=re.IGNORECASE)
                         if address_match:
                             structured_data['address'] = address_match.group(0)
 
@@ -63,10 +88,19 @@ def analysis():
                         if email_match:
                             structured_data['email'] = email_match.group(0)
 
+                        # Optionally split into logical document sections
+                        sections = re.split(r'(?=REPAYMENT SCHEDULE|COLLECTION NOTICE|MINNESOTA REVENUE)', cleaned_text, flags=re.IGNORECASE)
+                        sectioned_text = []
+                        for section in sections:
+                            section = section.strip()
+                            if section:
+                                sectioned_text.append(section)
+
                         pages_data.append({
                             "page_number": page_num + 1,
                             "structured_data": structured_data,
-                            "cleaned_text": cleaned_text
+                            "cleaned_text": cleaned_text,
+                            "sectioned_text": sectioned_text
                         })
 
                     st.success(f"Finished processing {page_count} page{'s' if page_count != 1 else ''}.")
@@ -76,7 +110,10 @@ def analysis():
                             st.subheader("Extracted Information")
                             st.json(page_data["structured_data"])
                             st.subheader("Cleaned OCR Text")
-                            st.text_area("OCR Output", page_data["cleaned_text"], height=400)
+                            # Display each section in a collapsible Streamlit expander
+                            for idx, section in enumerate(page_data.get("sectioned_text", []), 1):
+                                with st.expander(f"Section {idx}"):
+                                    st.text(section)
 
                 else:
                     st.warning("Unsupported file type for analysis.")

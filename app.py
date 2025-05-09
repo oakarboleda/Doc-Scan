@@ -24,7 +24,7 @@ analysis = st.Page("pages/analysis.py", title="analysis", icon=":material/bar_ch
 history = st.Page("tools/history.py", title="History", icon=":material/history:")
 # Main app logic
 if st.session_state.logged_in:
-    st.title("Welcome to the App!")
+  
     pg = st.navigation(
         {
             "Dashboard": [dashboard],
