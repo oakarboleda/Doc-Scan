@@ -7,7 +7,7 @@ from PIL import Image
 from easyocr import Reader
 from pypdf import PdfReader
 
-UPLOAD_DIR = "../downloads"
+UPLOAD_DIR = "./uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def extract_text_from_image(image):
@@ -81,7 +81,14 @@ def upload():
                 if st.button("Analyze", key=f"analyze_{file_name}"):
                     st.session_state['selected_file'] = file_path
                     st.success(f"File selected for analysis: {file_name}")
-                    st.set_query_params(page="analysis")
+                    st.experimental_set_query_params(page="analysis")
                     st.rerun()
 
 upload()
+st.title("Upload Files")
+st.write("Upload your files for analysis.")
+upload_file()
+display_uploaded_files()
+
+if __name__ == "__main__":
+    upload()
