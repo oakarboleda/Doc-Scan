@@ -18,24 +18,16 @@ dashboard = st.Page("pages/dashboard.py", title="Dashboard", icon=":material/das
 upload = st.Page("pages/upload.py", title="Upload", icon=":material/upload:")
 # analysis = st.Page("pages/analysis.py", title="analysis", icon=":material/bar_chart:")
 # Main app logic
-if st.user.logged_in:
+if st.user.is_logged_in:
     pg = st.navigation(
         {
             "Dashboard": [dashboard],
             "Actions": [upload],
-            "Logout": [logout]
+            "Logout": [st.logout]
 
         }
     )
 else:
-    pg = st.navigation(
-        {
-            "Login": [login]
-        }
-    )
-
-
-
-
+   st.write("Please login to continue.")
 
 pg.run()
