@@ -1,18 +1,17 @@
 
 # for adding new packages, add a locked version here and then run `uv pip install -r requirements.txt`
-python-dotenv==1.0.0
+python-dotenv~=1.0.0
 
 # Streamlit release notes: https://docs.streamlit.io/develop/quick-reference/release-notes
-streamlit==1.42.0
+streamlit~=1.42.0
 pandas==2.2.3  # for data manipulation and Streamlit tables
 
 # Authentication
 authlib>=1.3.2  # required for Streamlit authentication
 toml==0.10.2  # for secrets.toml file handling
 
-fitz
-PyPDF2
-openai
-PyMuPDF  # instead of fitz
 
-pytesseract
+pathlib~=1.0.1
+pypdf~=5.4.0
+pillow~=11.2.1
+dotenv~=0.9.9

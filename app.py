@@ -1,7 +1,6 @@
 import streamlit as st
 from dotenv import load_dotenv
 
-# from components.auth import check_auth, render_user_info
 
 # Load environment variables
 load_dotenv()

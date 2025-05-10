@@ -1,13 +1,24 @@
+# language: python
 import os
 
 import streamlit as st
 
-UPLOAD_DIR = "downloads"
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def files():
     st.title("Uploaded Files")
 
-    # Check if the directory exists and list files
+    # Add a file uploader for supporting png, jpg, jpeg and pdf
+    uploaded = st.file_uploader("Upload a file", type=["png", "jpg", "jpeg", "pdf"], key="files-upload")
+    if uploaded is not None:
+        file_path = os.path.join(UPLOAD_DIR, uploaded.name)
+        with open(file_path, "wb") as f:
+            f.write(uploaded.getbuffer())
+        st.success(f"File saved: {uploaded.name}")
+        st.experimental_rerun()  # Refresh the file list
+
+    # List existing files and provide a delete button for each
     if os.path.exists(UPLOAD_DIR):
         files = os.listdir(UPLOAD_DIR)
         if files:
@@ -24,6 +35,6 @@ def files():
         else:
             st.info("No files have been uploaded yet.")
     else:
-        st.error(f"The directory '{UPLOAD_DIR}' does not exist.")
+        st.error(f"The directory \\`{UPLOAD_DIR}\\` does not exist.")
 
 files()
