@@ -1,125 +1,131 @@
 import os
-import re
-
-import dotenv
-import easyocr
-import fitz  # PyMuPDF
-import numpy as np
-import streamlit as st
+import math
+import json
 from PIL import Image
+import streamlit as st
+import pandas as pd
+from datetime import datetime
+from time import sleep
+import streamlit_nested_layout
+import streamlit_javascript as st_js
+from streamlit_sparrow_labeling import st_sparrow_labeling, DataProcessor
 
-dotenv.load_dotenv()
+UPLOAD_DIR = "../downloads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-def analysis():
-    selected_file = st.session_state.get('selected_file')
-    if selected_file:
-        st.write(f"Analyzing file: {os.path.basename(selected_file)}")
+# Display saved files in a table
+files = os.listdir(UPLOAD_DIR)
+if files:
+    selected_file = st.selectbox("Select a document", files)
+    if st.button("Load Document"):
+        img_file = os.path.join(UPLOAD_DIR, selected_file)
+        rects_file = os.path.splitext(img_file)[0] + ".json"
+        if os.path.exists(img_file) and os.path.exists(rects_file):
+            st.session_state['selected_file'] = img_file
+            st.success(f"Selected file: {selected_file}")
+        else:
+            st.error("Selected file or its corresponding JSON file does not exist.")
+else:
+    st.warning("No files available in the directory.")
 
-        with st.spinner("Processing the file..."):
-            file_path = os.path.join("../downloads", selected_file)
-            try:
-                if selected_file.lower().endswith('.pdf'):
-                    doc = fitz.open(file_path)
-                    reader = easyocr.Reader(['en'])
-                    page_count = len(doc)
-                    st.info(f"PDF contains {page_count} page{'s' if page_count != 1 else ''}. Processing all pages...")
-                    pages_data = []
+def run(img_file, rects_file, labels):
+    ui_width = st_js.st_javascript("window.innerWidth")
 
-                    for page_num in range(page_count):
-                        page = doc.load_page(page_num)
-                        pix = page.get_pixmap()
-                        img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
-                        img_np = np.array(img)
-                        result = reader.readtext(img_np, detail=0)
-                        raw_text = " ".join(result)
+    try:
+        docImg = Image.open(img_file)
+    except FileNotFoundError:
+        st.error("Image file not found.")
+        return
 
-                        # Clean text
-                        cleaned_text = re.sub(r'[^\x00-\x7F]+', ' ', raw_text)
-                        cleaned_text = re.sub(r'\s{2,}', ' ', cleaned_text)
-                        cleaned_text = re.sub(r'\n{2,}', '\n', cleaned_text).strip()
+    saved_state = st.session_state.get('saved_state')
+    if not saved_state:
+        try:
+            with open(rects_file, "r") as f:
+                saved_state = json.load(f)
+                st.session_state['saved_state'] = saved_state
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            st.error(f"Error loading file: {e}")
+            return
 
-                        # Start structured_data with default type
-                        structured_data = {
-                            "document_type": "Unknown"
-                        }
+    assign_labels = st.checkbox("Assign Labels", True)
+    mode = "transform" if assign_labels else "rect"
 
-                        # IONOS Invoice Detection and Extraction
-                        if "Invoice" in cleaned_text and "IONOS" in cleaned_text:
-                            structured_data["document_type"] = "IONOS Invoice"
+    data_processor = DataProcessor()
 
-                            invoice_no = re.search(r"Invoice[:\s#]*([0-9]{9,})", cleaned_text)
-                            if invoice_no:
-                                structured_data["invoice_number"] = invoice_no.group(1)
+    col1, col2 = st.columns([4, 6])
 
-                            invoice_date = re.search(r"Invoice Date[:\s]+([0-9/]+)", cleaned_text)
-                            if invoice_date:
-                                structured_data["invoice_date"] = invoice_date.group(1)
+    with col1:
+        height = saved_state['meta']['image_size']['height']
+        width = saved_state['meta']['image_size']['width']
 
-                            customer_id = re.search(r"Customer ID[:\s]+([0-9]+)", cleaned_text)
-                            if customer_id:
-                                structured_data["customer_id"] = customer_id.group(1)
+        canvas_width = canvas_available_width(ui_width)
 
-                            contract_id = re.search(r"Contract ID[:\s]+([0-9]+)", cleaned_text)
-                            if contract_id:
-                                structured_data["contract_id"] = contract_id.group(1)
+        result_rects = st_sparrow_labeling(
+            fill_color="rgba(0, 151, 255, 0.3)",
+            stroke_width=2,
+            stroke_color="rgba(0, 50, 255, 0.7)",
+            background_image=docImg,
+            initial_rects=saved_state,
+            height=height,
+            width=width,
+            drawing_mode=mode,
+            display_toolbar=True,
+            update_streamlit=True,
+            canvas_width=canvas_width,
+            doc_height=height,
+            doc_width=width,
+            image_rescale=True,
+            key="doc_annotation"
+        )
 
-                            total_due = re.search(r"Total amount due.*?\$([0-9]+\.[0-9]{2})", cleaned_text,
-                                                  re.IGNORECASE)
-                            if total_due:
-                                structured_data["total_due"] = total_due.group(1)
+        st.caption("Check 'Assign Labels' to enable editing of labels and values, move and resize the boxes to "
+                   "annotate the document.")
+        st.caption("Add annotations by clicking and dragging on the document, when 'Assign Labels' is unchecked.")
 
-                        match = re.search(r'Account Number[:\s]+([0-9\-xX*]+)', cleaned_text, flags=re.IGNORECASE)
-                        if match:
-                            structured_data['account_number'] = match.group(1)
+    with col2:
+        if result_rects is not None:
+            with st.form(key="fields_form"):
+                if result_rects.current_rect_index is not None and result_rects.current_rect_index != -1:
+                    st.write("Selected Field: ",
+                             result_rects.rects_data['words'][result_rects.current_rect_index]['value'])
+                    st.markdown("---")
 
-                        balance_match = re.search(r'(?:Balance\s+Due|Amount\s+Due)[:\s$]*([0-9,]+\.\d{2})', cleaned_text, flags=re.IGNORECASE)
-                        if balance_match:
-                            structured_data['balance'] = balance_match.group(1)
-
-                        name_match = re.search(r'Dear\s+([A-Z][a-z]+\s+[A-Z][a-z]+)', cleaned_text)
-                        if name_match:
-                            structured_data['name'] = name_match.group(1)
-
-                        address_match = re.search(r'\d{3,5}\s+[A-Z][a-z]+(?:\s+[A-Z][a-z]+)*,\s+[A-Z]{2}\s+\d{5}', cleaned_text, flags=re.IGNORECASE)
-                        if address_match:
-                            structured_data['address'] = address_match.group(0)
-
-                        email_match = re.search(r'[\w\.-]+@[\w\.-]+\.\w+', cleaned_text)
-                        if email_match:
-                            structured_data['email'] = email_match.group(0)
-
-                        # Optionally split into logical document sections
-                        sections = re.split(r'(?=REPAYMENT SCHEDULE|COLLECTION NOTICE|MINNESOTA REVENUE)', cleaned_text, flags=re.IGNORECASE)
-                        sectioned_text = []
-                        for section in sections:
-                            section = section.strip()
-                            if section:
-                                sectioned_text.append(section)
-
-                        pages_data.append({
-                            "page_number": page_num + 1,
-                            "structured_data": structured_data,
-                            "cleaned_text": cleaned_text,
-                            "sectioned_text": sectioned_text
-                        })
-
-                    st.success(f"Finished processing {page_count} page{'s' if page_count != 1 else ''}.")
-
-                    for page_data in pages_data:
-                        with st.expander(f"Page {page_data['page_number']}"):
-                            st.subheader("Extracted Information")
-                            st.json(page_data["structured_data"])
-                            st.subheader("Cleaned OCR Text")
-                            # Display each section in a collapsible Streamlit expander
-                            for idx, section in enumerate(page_data.get("sectioned_text", []), 1):
-                                with st.expander(f"Section {idx}"):
-                                    st.text(section)
-
+                if ui_width > 1500:
+                    render_form_wide(result_rects.rects_data['words'], labels, result_rects, data_processor)
+                elif ui_width > 1000:
+                    render_form_avg(result_rects.rects_data['words'], labels, result_rects, data_processor)
+                elif ui_width > 500:
+                    render_form_narrow(result_rects.rects_data['words'], labels, result_rects, data_processor)
                 else:
-                    st.warning("Unsupported file type for analysis.")
-            except Exception as e:
-                st.error(f"Error during analysis: {e}")
-    else:
-        st.warning("No file selected for analysis.")
+                    render_form_mobile(result_rects.rects_data['words'], labels, result_rects, data_processor)
 
-analysis()
+                submit = st.form_submit_button("Save", type="primary")
+                if submit:
+                    try:
+                        with open(rects_file, "w") as f:
+                            json.dump(result_rects.rects_data, f, indent=2)
+                        with open(rects_file, "r") as f:
+                            saved_state = json.load(f)
+                            st.session_state['saved_state'] = saved_state
+                        st.write("Saved!")
+                    except Exception as e:
+                        st.error(f"Error saving file: {e}")
+
+def canvas_available_width(ui_width):
+    if ui_width > 500:
+        return math.floor(38 * ui_width / 100)
+    else:
+        return ui_width
+
+if 'selected_file' in st.session_state:
+    selected_file = st.session_state['selected_file']
+    img_file = selected_file
+    rects_file = os.path.splitext(selected_file)[0] + ".json"
+    labels = ["", "item", "item_price", "subtotal", "tax", "total"]
+
+    if os.path.exists(img_file) and os.path.exists(rects_file):
+        run(img_file, rects_file, labels)
+    else:
+        st.error("Selected file or its corresponding JSON file does not exist.")
+else:
+    st.warning("No file selected. Please upload and select a file first.")

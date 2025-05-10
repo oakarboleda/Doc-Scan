@@ -1,8 +1,7 @@
 streamlit~=1.45.0
 pillow~=11.2.1
-PyPDF2~=3.0.1
-numpy~=1.26.4
+numpy~=2.0.2
 easyocr~=1.7.2
-python-dotenv~=1.1.0
 pandas~=2.2.3
-pytesseract~=0.3.13
+
+pdfminer~=20191125

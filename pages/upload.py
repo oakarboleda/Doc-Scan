@@ -1,8 +1,9 @@
 import json
 import os
 
-import PyPDF2
 import numpy as np
+import pandas as pd
+import PyPDF2
 import streamlit as st
 from PIL import Image
 from easyocr import Reader
@@ -81,7 +82,7 @@ def upload():
                 if st.button("Analyze", key=f"analyze_{file_name}"):
                     st.session_state['selected_file'] = file_path
                     st.success(f"File selected for analysis: {file_name}")
-                    st.switch_page("pages/analysis.py")
+                    st.set_query_params(page="analysis")
                     st.rerun()
 
 upload()
