@@ -69,11 +69,6 @@ def upload():
                     st.rerun()
 
 
-upload()
-st.title("Upload Files")
-st.write("Upload your files for analysis.")
-upload_file()
-display_uploaded_files()
 
 if __name__ == "__main__":
     upload()
