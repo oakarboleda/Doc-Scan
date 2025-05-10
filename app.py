@@ -19,14 +19,14 @@ st.sidebar.button("Log Out", on_click=logout)
 
 dashboard = st.Page("pages/dashboard.py", title="Dashboard", icon=":material/dashboard:")
 upload = st.Page("pages/upload.py", title="Upload", icon=":material/upload:")
-analysis = st.Page("pages/analysis.py", title="analysis", icon=":material/bar_chart:")
+# analysis = st.Page("pages/analysis.py", title="analysis", icon=":material/bar_chart:")
 # Main app logic
 if st.session_state.logged_in:
   
     pg = st.navigation(
         {
             "Dashboard": [dashboard],
-            "Reports": [upload, analysis]
+            "Reports": [upload]
 
         }
     )
