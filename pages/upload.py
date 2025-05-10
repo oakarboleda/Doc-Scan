@@ -1,11 +1,13 @@
-import re
-import json
+import os
 import re
 from pathlib import Path
 
 import streamlit as st
-from pypdf import \
-    PdfReader  # Make sure you installed with: pip install pypdf# Make sure you installed with: pip install pypdf
+from pypdf import PdfReader
+
+# Directory where PDF files are saved and analyzed
+DOWNLOADS_DIR = Path("downloads")
+DOWNLOADS_DIR.mkdir(exist_ok=True)
 
 uploaded_file = st.file_uploader("Upload a scanned PDF", type=["pdf"])
 
@@ -14,7 +16,7 @@ def extract_text_from_pdf(file_path: Path) -> str:
     reader = PdfReader(file_path)
     text = ""
     for page in reader.pages:
-        text += page.extract_text() or ""  # In case a page has no extractable text
+        text += page.extract_text() or ""
         text += "\n"
     return text
 
@@ -36,23 +38,54 @@ def parse_info(text: str) -> dict:
 
     return info
 
-def analyze_pdfs_in_directory(input_dir: Path):
-    """Loop through PDF files in a directory and analyze them."""
-    for pdf_file in input_dir.glob("*.pdf"):
-        print(f"Analyzing: {pdf_file.name}")
-        text = extract_text_from_pdf(pdf_file)
-        parsed_info = parse_info(text)
+def analyze_pdf(pdf_path: Path) -> dict:
+    """Analyze a single PDF file and return parsed information."""
+    try:
+        text = extract_text_from_pdf(pdf_path)
+        info = parse_info(text)
+        return info
+    except Exception as e:
+        return {"error": str(e)}
 
-        print(json.dumps(parsed_info, indent=2))
-        print("-" * 40)
-
-def main():
-    input_dir = Path("downloads")  # Change this to your actual folder path if needed
-    if not input_dir.exists():
-        print(f"Directory {input_dir} does not exist. Please create it and add PDF files.")
+def display_files_table():
+    """Display a table of analyzed PDF files with a delete button for each."""
+    pdf_files = list(DOWNLOADS_DIR.glob("*.pdf"))
+    if not pdf_files:
+        st.info("No PDF files uploaded yet.")
         return
 
-    analyze_pdfs_in_directory(input_dir)
+    # Table header
+    col1, col2, col3, col4, col5 = st.columns([3, 2, 3, 3, 1])
+    col1.markdown(r"\*\*File\*\*")
+    col2.markdown(r"\*\*Account\*\*")
+    col3.markdown(r"\*\*Email\*\*")
+    col4.markdown(r"\*\*Name\*\*")
+    col5.markdown(r"\*\*Action\*\*")
 
-if __name__ == "__main__":
-    main()
+    for pdf_file in pdf_files:
+        info = analyze_pdf(pdf_file)
+        file_name = pdf_file.name
+        account = info.get("account_number", "N/A")
+        email = info.get("email", "N/A")
+        name = info.get("name", "N/A")
+
+        col1, col2, col3, col4, col5 = st.columns([3, 2, 3, 3, 1])
+        col1.write(file_name)
+        col2.write(account)
+        col3.write(email)
+        col4.write(name)
+        if col5.button("Delete", key=file_name):
+            os.remove(pdf_file)
+            st.success(f"Deleted file: {file_name}")
+            st.rerun()
+
+if uploaded_file is not None:
+    # Save the uploaded file
+    file_path = DOWNLOADS_DIR / uploaded_file.name
+    with open(file_path, "wb") as f:
+        f.write(uploaded_file.getbuffer())
+    st.success(f"File saved: {uploaded_file.name}")
+    st.rerun()
+
+st.header("Analyzed PDF Files")
+display_files_table()
