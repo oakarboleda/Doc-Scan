@@ -31,9 +31,9 @@ else:
    st.write("Please login to continue.")
 
 if __name__ == "__main__":
-
-    if st.session_state["logged_in"]:
-
-    else:
-        st.write("Please Enter correct username and Password")
+    # Initialize session stat
+    if "page" not in st.session_state:
+        st.session_state.page = "dashboard"
+    # Run the app
+    st.run()
 
