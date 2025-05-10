@@ -6,4 +6,4 @@ def login():
 
     st.write("This is the login page.")
     # Add your login content here
-    username = st.text_input("Username")
+    st.button("Login", on_click=: st.session_state.clear())
