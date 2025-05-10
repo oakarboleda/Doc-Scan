@@ -62,27 +62,12 @@ def upload():
             col1, col2, col3, col4 = st.columns([3, 1, 1, 1])
             with col1:
                 st.write(file_name)
-            with col2:
-                if st.button("Preview", key=f"preview_{file_name}"):
-                    if file_name.endswith(".pdf"):
-                        text = extract_text_from_pdf(file_path)
-                        st.text_area("Preview (PDF Text):", text, height=200)
-                    elif file_name.lower().endswith((".png", ".jpg", ".jpeg")):
-                        image = Image.open(file_path)
-                        st.image(image, caption=file_name, use_column_width=True)
-                    else:
-                        st.error("Preview not supported for this file type.")
             with col3:
                 if st.button("Delete", key=f"delete_{file_name}"):
                     os.remove(file_path)
                     st.success(f"Deleted file: {file_name}")
                     st.rerun()
-            with col4:
-                if st.button("Analyze", key=f"analyze_{file_name}"):
-                    st.session_state['selected_file'] = file_path
-                    st.success(f"File selected for analysis: {file_name}")
-                    st.experimental_set_query_params(page="analysis")
-                    st.rerun()
+
 
 upload()
 st.title("Upload Files")
