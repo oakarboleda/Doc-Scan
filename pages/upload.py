@@ -7,12 +7,6 @@ from PIL import Image
 from easyocr import Reader
 from pypdf import PdfReader
 
-reader = PdfReader("example.pdf")
-number_of_pages = len(reader.pages)
-page = reader.pages[0]
-text = page.extract_text()
-
-
 UPLOAD_DIR = "../downloads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
