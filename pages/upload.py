@@ -2,11 +2,16 @@ import json
 import os
 
 import numpy as np
-import pandas as pd
-import PyPDF2
 import streamlit as st
 from PIL import Image
 from easyocr import Reader
+from pypdf import PdfReader
+
+reader = PdfReader("example.pdf")
+number_of_pages = len(reader.pages)
+page = reader.pages[0]
+text = page.extract_text()
+
 
 UPLOAD_DIR = "../downloads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -21,7 +26,7 @@ def extract_text_from_pdf(pdf_path):
     """Extract text from a PDF file using PyPDF2."""
     text = ""
     with open(pdf_path, "rb") as pdf_file:
-        reader = PyPDF2.PdfReader(pdf_file)
+        reader = PdfReader(pdf_file)
         for page in reader.pages:
             text += page.extract_text()
     return text
