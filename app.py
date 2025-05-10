@@ -1,24 +1,17 @@
 import streamlit as st
 
 
+
+def login_screen():
+    st.header("This app is private.")
+    st.subheader("Please log in.")
+    st.button("Log in with Google", on_click=st.login)
+
 if not st.user.is_logged_in:
-    if st.button("Log in"):
-        st.login("google")
+    login_screen()
 else:
-    if st.button("Log out"):
-        st.logout()
-    st.write(f"Hello, {st.user.name}!")
-
-
-def login():
-    if st.button("Log in"):
-        st.user.logged_in = True
-        st.rerun()
-
-def logout():
-    if st.button("Log out"):
-        st.user.logged_in = False
-        st.rerun()
+    st.header(f"Welcome, {st.user.name}!")
+    st.button("Log out", on_click=st.logout)
 
 
 dashboard = st.Page("pages/dashboard.py", title="Dashboard", icon=":material/dashboard:")
