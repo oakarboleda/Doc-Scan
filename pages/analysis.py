@@ -1,16 +1,13 @@
-import os
-import math
 import json
-from PIL import Image
+import math
+import os
+
 import streamlit as st
-import pandas as pd
-from datetime import datetime
-from time import sleep
-import streamlit_nested_layout
 import streamlit_javascript as st_js
+from PIL import Image
 from streamlit_sparrow_labeling import st_sparrow_labeling, DataProcessor
 
-UPLOAD_DIR = "../downloads"
+UPLOAD_DIR = "./uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 # Display saved files in a table
