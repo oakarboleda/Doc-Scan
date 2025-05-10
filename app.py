@@ -22,7 +22,6 @@ upload = st.Page("pages/upload.py", title="Upload", icon=":material/upload:")
 # analysis = st.Page("pages/analysis.py", title="analysis", icon=":material/bar_chart:")
 # Main app logic
 if st.session_state.logged_in:
-  
     pg = st.navigation(
         {
             "Dashboard": [dashboard],
@@ -32,10 +31,11 @@ if st.session_state.logged_in:
     )
 else:
     st.title("Please log in to continue.")
-    pg = st.navigation(
-        {
-            "Log in": [login],
-        }
-    )
-    st.sidebar.write("Please log in to access the app.")
+    st.button("Log in", on_click=login)
+
+if st.session_state.logged_out:
+    st.session_state.logged_out = true
+    st.session_state.logged_in = False
+    st.session_state.clear()
+
 pg.run()
