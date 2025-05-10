@@ -18,8 +18,8 @@ st.set_page_config(
 # check_auth()
 
 # Setup navigation using st.Page
-home = st.Page("pages/home.py", title="Home", icon="🏠", default=True)
-uploads = st.Page("pages/upload.py.py", title="State Scenarios", icon="🔁")
+home = st.Page("pages/dashboard.py", title="Home", icon="🏠", default=True)
+uploads = st.Page("pages/upload.py", title="Upload File", icon="🔁")
 # authenticated = st.Page("pages/authenticated.py", title="Authenticated", icon="🔒")
 pg = st.navigation([home, uploads])
 
