@@ -30,10 +30,4 @@ if st.user.is_logged_in:
 else:
    st.write("Please login to continue.")
 
-if __name__ == "__main__":
-    # Initialize session stat
-    if "page" not in st.session_state:
-        st.session_state.page = "dashboard"
-    # Run the app
-    st.run()
 
