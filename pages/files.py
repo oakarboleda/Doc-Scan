@@ -2,7 +2,7 @@ import os
 
 import streamlit as st
 
-UPLOAD_DIR = "../downloads"
+UPLOAD_DIR = "downloads"
 
 def files():
     st.title("Uploaded Files")
