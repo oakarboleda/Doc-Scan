@@ -7,7 +7,7 @@ from PIL import Image
 from easyocr import Reader
 from pypdf import PdfReader
 
-UPLOAD_DIR = "./uploads"
+UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 
 def extract_text_from_image(image):
