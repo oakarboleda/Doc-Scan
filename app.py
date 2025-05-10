@@ -30,9 +30,13 @@ if st.session_state.logged_in:
         }
     )
 else:
-    st.session_state.logged_out = true
-    st.title("Please log in to continue.")
-    st.button("Log in", on_click=login)
+    pg = st.navigation(
+        {
+            "Login": [login]
+        }
+    )
+    st.message("Please login to continue.")
+
 
 
 
