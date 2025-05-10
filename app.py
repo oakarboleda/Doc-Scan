@@ -35,7 +35,7 @@ else:
             "Login": [login]
         }
     )
-    st.message("Please login to continue.")
+
 
 
 
